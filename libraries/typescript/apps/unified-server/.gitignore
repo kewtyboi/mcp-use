@@ -1,0 +1,7 @@
+# Local secrets for unified-server
+.env
+.env.*
+!.env.example
+private-key.pem
+*.pem
+*.key
