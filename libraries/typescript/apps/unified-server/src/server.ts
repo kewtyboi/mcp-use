@@ -13,10 +13,18 @@ async function main() {
   if (process.env.GITHUB_MCP_WS_URL) {
     await server.addRemote('github', websocket({ url: process.env.GITHUB_MCP_WS_URL! }))
   } else {
+    const appId = process.env.GITHUB_APP_ID
+    const privateKey = process.env.GITHUB_PRIVATE_KEY
+    const installationId = process.env.GITHUB_INSTALLATION_ID
+
+    if (!appId) throw new Error('GITHUB_APP_ID is required when GITHUB_MCP_WS_URL is not set')
+    if (!privateKey) throw new Error('GITHUB_PRIVATE_KEY is required when GITHUB_MCP_WS_URL is not set')
+    if (!installationId) throw new Error('GITHUB_INSTALLATION_ID is required when GITHUB_MCP_WS_URL is not set')
+
     const getOctokit = createGitHubOctokit({
-      appId: process.env.GITHUB_APP_ID!,
-      privateKey: process.env.GITHUB_PRIVATE_KEY!,
-      installationId: process.env.GITHUB_INSTALLATION_ID!
+      appId,
+      privateKey,
+      installationId
     })
     const gh = githubToolHandlers(getOctokit)
     server.tools.registerNamespace('github', {
