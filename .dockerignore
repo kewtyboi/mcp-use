@@ -1,0 +1,70 @@
+# Repository root .dockerignore for unified-server builds
+# This file should be at the repository root when building Docker images
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README.md
+LICENSE
+CONTRIBUTING.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts (not needed in Docker context)
+dist/
+build/
+*.log
+*.tmp
+
+# Environment files (should be passed via --env-file)
+.env
+.env.local
+.env.*.local
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+coverage/
+.nyc_output/
+
+# Python (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+
+# Node modules (will be installed in Docker)
+**/node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
