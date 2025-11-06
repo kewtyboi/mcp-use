@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.7-labs
 
 # -----------------------------
 # Build stage
@@ -6,8 +6,9 @@
 FROM node:20-slim AS build
 WORKDIR /app
 
-# Enable pnpm via corepack for reproducibility
+# Use pnpm via corepack and define a stable store path for cache mounts
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+ENV PNPM_STORE_DIR=/pnpm/store
 
 # Copy workspace manifests (INCLUDE LOCKFILE)
 # NOTE: this Dockerfile expects build context at repo root
@@ -19,16 +20,15 @@ COPY libraries/typescript/package.json ./libraries/typescript/
 COPY libraries/typescript/packages/ ./libraries/typescript/packages/
 COPY libraries/typescript/apps/unified-server/ ./libraries/typescript/apps/unified-server/
 
-# Install deps at workspace root using frozen lockfile
+# Install deps at workspace root using frozen lockfile with cache mount
 WORKDIR /app/libraries/typescript
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 
-# Build the unified-server app
-RUN pnpm -C apps/unified-server build
+# Build the unified-server app (reuse the same cache)
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm -C apps/unified-server build
 
-# Produce a production-only deployable for the app (prunes dev deps and other workspaces)
-# Resulting /out contains package.json, node_modules (prod only), and built files needed to run
-RUN pnpm --filter unified-server deploy --prod /out
+# Produce a production-only deployable for the app (prunes dev deps & other workspaces)
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm --filter unified-server deploy --prod /out
 
 # -----------------------------
 # Runtime stage
