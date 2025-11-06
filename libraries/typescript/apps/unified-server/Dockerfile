@@ -1,41 +1,44 @@
-# Multi-stage build for unified-server
-FROM node:20-slim AS base
+# syntax=docker/dockerfile:1
 
-# Install pnpm
-RUN npm install -g pnpm@latest
-
+# -----------------------------
+# Build stage
+# -----------------------------
+FROM node:20-slim AS build
 WORKDIR /app
 
-# Copy workspace configuration (include lockfile)
-COPY libraries/typescript/pnpm-workspace.yaml \
-     libraries/typescript/pnpm-lock.yaml \
-     libraries/typescript/package.json \
-     libraries/typescript/.npmrc* \
-     ./libraries/typescript/ 2>/dev/null || true
+# Enable pnpm via corepack for reproducibility
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-# Copy mcp-use package (needed for workspace dependency)
-COPY libraries/typescript/packages/mcp-use ./libraries/typescript/packages/mcp-use
+# Copy workspace manifests (INCLUDE LOCKFILE)
+# NOTE: this Dockerfile expects build context at repo root
+COPY libraries/typescript/pnpm-workspace.yaml ./libraries/typescript/
+COPY libraries/typescript/pnpm-lock.yaml ./libraries/typescript/
+COPY libraries/typescript/package.json ./libraries/typescript/
 
-# Copy unified-server app
-COPY libraries/typescript/apps/unified-server ./libraries/typescript/apps/unified-server
+# Copy necessary workspaces
+COPY libraries/typescript/packages/ ./libraries/typescript/packages/
+COPY libraries/typescript/apps/unified-server/ ./libraries/typescript/apps/unified-server/
 
-# Install dependencies and build
+# Install deps at workspace root using frozen lockfile
 WORKDIR /app/libraries/typescript
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter unified-server build
 
-# Production stage
-FROM node:20-slim AS production
+# Build the unified-server app
+RUN pnpm -C apps/unified-server build
 
+# Produce a production-only deployable for the app (prunes dev deps and other workspaces)
+# Resulting /out contains package.json, node_modules (prod only), and built files needed to run
+RUN pnpm --filter unified-server deploy --prod /out
+
+# -----------------------------
+# Runtime stage
+# -----------------------------
+FROM node:20-slim AS runtime
 WORKDIR /app
 
-# Copy built application
-COPY --from=base /app/libraries/typescript/apps/unified-server/dist ./dist
-COPY --from=base /app/libraries/typescript/apps/unified-server/package.json ./
-COPY --from=base /app/libraries/typescript/node_modules ./node_modules
+# Copy only the pruned deployable from build stage
+COPY --from=build /out/ ./
 
-# Expose WebSocket port (default 8777)
+ENV NODE_ENV=production
 EXPOSE 8777
-
-# Run the server
 CMD ["node", "dist/server.js"]
