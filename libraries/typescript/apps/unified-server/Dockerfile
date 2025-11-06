@@ -33,10 +33,10 @@ WORKDIR /app
 
 # Copy built application and workspace files needed for production install
 COPY --from=base /app/libraries/typescript/apps/unified-server/dist ./dist
-COPY --from=base /app/libraries/typescript/apps/unified-server/package.json ./
 COPY --from=base /app/libraries/typescript/pnpm-workspace.yaml ./libraries/typescript/
 COPY --from=base /app/libraries/typescript/package.json ./libraries/typescript/
 COPY --from=base /app/libraries/typescript/pnpm-lock.yaml ./libraries/typescript/ 2>/dev/null || true
+COPY --from=base /app/libraries/typescript/apps/unified-server/package.json ./libraries/typescript/apps/unified-server/
 COPY --from=base /app/libraries/typescript/packages/mcp-use/package.json ./libraries/typescript/packages/mcp-use/
 COPY --from=base /app/libraries/typescript/packages/mcp-use/dist ./libraries/typescript/packages/mcp-use/dist
 
