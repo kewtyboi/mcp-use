@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { createServer } from 'mcp-use/server'
-import { websocket, stdio } from 'mcp-use/connectors'
+import { websocket, http, stdio } from 'mcp-use/connectors'
 import { createGitHubOctokit, githubToolHandlers } from './github-tools'
 
 async function main() {
@@ -8,15 +8,34 @@ async function main() {
 
   const ctx7Url = process.env.CONTEXT7_WS_URL
   if (!ctx7Url) throw new Error('CONTEXT7_WS_URL not set')
-  await server.addRemote('context7', websocket({ url: ctx7Url }))
+  // Support both HTTP and WebSocket URLs
+  if (ctx7Url.startsWith('ws://') || ctx7Url.startsWith('wss://')) {
+    await server.addRemote('context7', websocket({ url: ctx7Url }))
+  } else {
+    await server.addRemote('context7', http({ url: ctx7Url }))
+  }
 
   if (process.env.GITHUB_MCP_WS_URL) {
-    await server.addRemote('github', websocket({ url: process.env.GITHUB_MCP_WS_URL! }))
+    const ghUrl = process.env.GITHUB_MCP_WS_URL
+    // Support both HTTP and WebSocket URLs
+    if (ghUrl.startsWith('ws://') || ghUrl.startsWith('wss://')) {
+      await server.addRemote('github', websocket({ url: ghUrl }))
+    } else {
+      await server.addRemote('github', http({ url: ghUrl }))
+    }
   } else {
+    const appId = process.env.GITHUB_APP_ID
+    const privateKey = process.env.GITHUB_PRIVATE_KEY
+    const installationId = process.env.GITHUB_INSTALLATION_ID
+
+    if (!appId) throw new Error('GITHUB_APP_ID is required when GITHUB_MCP_WS_URL is not set')
+    if (!privateKey) throw new Error('GITHUB_PRIVATE_KEY is required when GITHUB_MCP_WS_URL is not set')
+    if (!installationId) throw new Error('GITHUB_INSTALLATION_ID is required when GITHUB_MCP_WS_URL is not set')
+
     const getOctokit = createGitHubOctokit({
-      appId: process.env.GITHUB_APP_ID!,
-      privateKey: process.env.GITHUB_PRIVATE_KEY!,
-      installationId: process.env.GITHUB_INSTALLATION_ID!
+      appId,
+      privateKey,
+      installationId
     })
     const gh = githubToolHandlers(getOctokit)
     server.tools.registerNamespace('github', {
