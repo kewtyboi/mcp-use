@@ -24,7 +24,11 @@ export function githubToolHandlers(getOctokit: () => Promise<Octokit>) {
           return { ok: true, id: res.data.id, html_url: res.data.html_url }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error'
-          throw new Error(`Failed to add issue comment: ${message}`)
+          const wrapped = new Error(`Failed to add issue comment: ${message}`)
+          if (error instanceof Error) {
+            wrapped.cause = error
+          }
+          throw wrapped
         }
       }
     },
@@ -43,7 +47,11 @@ export function githubToolHandlers(getOctokit: () => Promise<Octokit>) {
           return { ok: true }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error'
-          throw new Error(`Failed to create branch: ${message}`)
+          const wrapped = new Error(`Failed to create branch: ${message}`)
+          if (error instanceof Error) {
+            wrapped.cause = error
+          }
+          throw wrapped
         }
       }
     },
@@ -61,7 +69,11 @@ export function githubToolHandlers(getOctokit: () => Promise<Octokit>) {
           return { ok: true, number: res.data.number, html_url: res.data.html_url }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error'
-          throw new Error(`Failed to create pull request: ${message}`)
+          const wrapped = new Error(`Failed to create pull request: ${message}`)
+          if (error instanceof Error) {
+            wrapped.cause = error
+          }
+          throw wrapped
         }
       }
     }
