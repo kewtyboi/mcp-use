@@ -6,8 +6,12 @@ RUN npm install -g pnpm@latest
 
 WORKDIR /app
 
-# Copy workspace configuration
-COPY libraries/typescript/pnpm-workspace.yaml libraries/typescript/package.json libraries/typescript/.npmrc* ./libraries/typescript/ 2>/dev/null || true
+# Copy workspace configuration (include lockfile)
+COPY libraries/typescript/pnpm-workspace.yaml \
+     libraries/typescript/pnpm-lock.yaml \
+     libraries/typescript/package.json \
+     libraries/typescript/.npmrc* \
+     ./libraries/typescript/ 2>/dev/null || true
 
 # Copy mcp-use package (needed for workspace dependency)
 COPY libraries/typescript/packages/mcp-use ./libraries/typescript/packages/mcp-use
@@ -35,4 +39,3 @@ EXPOSE 8777
 
 # Run the server
 CMD ["node", "dist/server.js"]
-
