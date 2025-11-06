@@ -8,20 +8,38 @@ async function main() {
 
   const ctx7Url = process.env.CONTEXT7_WS_URL
   if (!ctx7Url) throw new Error('CONTEXT7_WS_URL not set')
+  // Validate URL and determine protocol
+  let url: URL
+  try {
+    url = new URL(ctx7Url)
+  } catch (error) {
+    throw new Error(`Invalid CONTEXT7_WS_URL format: ${ctx7Url}`)
+  }
   // Support both HTTP and WebSocket URLs
-  if (ctx7Url.startsWith('ws://') || ctx7Url.startsWith('wss://')) {
+  if (url.protocol === 'ws:' || url.protocol === 'wss:') {
     await server.addRemote('context7', websocket({ url: ctx7Url }))
-  } else {
+  } else if (url.protocol === 'http:' || url.protocol === 'https:') {
     await server.addRemote('context7', http({ url: ctx7Url }))
+  } else {
+    throw new Error(`Unsupported protocol in CONTEXT7_WS_URL: ${url.protocol}. Use http://, https://, ws://, or wss://`)
   }
 
   if (process.env.GITHUB_MCP_WS_URL) {
     const ghUrl = process.env.GITHUB_MCP_WS_URL
+    // Validate URL and determine protocol
+    let url: URL
+    try {
+      url = new URL(ghUrl)
+    } catch (error) {
+      throw new Error(`Invalid GITHUB_MCP_WS_URL format: ${ghUrl}`)
+    }
     // Support both HTTP and WebSocket URLs
-    if (ghUrl.startsWith('ws://') || ghUrl.startsWith('wss://')) {
+    if (url.protocol === 'ws:' || url.protocol === 'wss:') {
       await server.addRemote('github', websocket({ url: ghUrl }))
-    } else {
+    } else if (url.protocol === 'http:' || url.protocol === 'https:') {
       await server.addRemote('github', http({ url: ghUrl }))
+    } else {
+      throw new Error(`Unsupported protocol in GITHUB_MCP_WS_URL: ${url.protocol}. Use http://, https://, ws://, or wss://`)
     }
   } else {
     const appId = process.env.GITHUB_APP_ID
